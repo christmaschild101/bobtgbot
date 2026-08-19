@@ -16,7 +16,7 @@ from telegram.ext import (
     filters,
 )
 
-from bot.config import get_token
+from bot.config import get_openrouter_key, get_token, get_translate_cooldown
 from bot.handlers import (
     cmd_ban,
     cmd_help,
@@ -25,6 +25,7 @@ from bot.handlers import (
     cmd_start,
     on_left_member,
     on_new_members,
+    on_translatable_message,
 )
 from bot.storage import BobStore
 
@@ -41,6 +42,8 @@ def build_application() -> Application:
     store = BobStore(DATA_FILE)
     app = Application.builder().token(get_token()).build()
     app.bot_data["store"] = store
+    app.bot_data["translator_enabled"] = bool(get_openrouter_key())
+    app.bot_data["translate_cooldown"] = get_translate_cooldown()
 
     app.add_handler(CommandHandler("start", cmd_start))
     app.add_handler(CommandHandler("help", cmd_help))
@@ -54,6 +57,12 @@ def build_application() -> Application:
 
     app.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, on_new_members))
     app.add_handler(MessageHandler(filters.StatusUpdate.LEFT_CHAT_MEMBER, on_left_member))
+    app.add_handler(
+        MessageHandler(
+            filters.TEXT & ~filters.COMMAND & filters.ChatType.GROUPS,
+            on_translatable_message,
+        )
+    )
 
     return app
 

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import asyncio
+import time
 from typing import Optional
 
 from telegram import Chat, Update, User
@@ -10,6 +12,7 @@ from telegram.error import BadRequest, Forbidden, TelegramError
 from telegram.ext import ContextTypes
 
 from .storage import BobStore
+from .translator import detect_language, is_echo, translate_to_english
 
 HELP_TEXT = (
     "Bob helps keep your group friendly. Available commands:\n\n"
@@ -232,3 +235,37 @@ async def on_left_member(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     store: BobStore = context.bot_data["store"]
     farewell = store.get_farewell(chat.id)
     await message.reply_text(_render(farewell, chat, message.left_chat_member))
+
+
+async def on_translatable_message(
+    update: Update, context: ContextTypes.DEFAULT_TYPE
+) -> None:
+    """Translate non-English group messages via OpenRouter."""
+    if not context.bot_data.get("translator_enabled"):
+        return
+    chat = update.effective_chat
+    message = update.effective_message
+    if chat is None or message is None or not message.text:
+        return
+    sender = message.from_user
+    if sender is None or sender.is_bot:
+        return
+
+    cooldown = float(context.bot_data.get("translate_cooldown", 15.0))
+    now = time.monotonic()
+    last = context.chat_data.get("last_translation")
+    if last is not None and now - last < cooldown:
+        return
+
+    language = await asyncio.to_thread(detect_language, message.text)
+    if language is None or language == "en":
+        return
+
+    translation = await translate_to_english(message.text)
+    if not translation:
+        return
+    if is_echo(message.text, translation):
+        return
+
+    context.chat_data["last_translation"] = time.monotonic()
+    await message.reply_text(translation)

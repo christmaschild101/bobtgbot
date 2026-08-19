@@ -38,3 +38,24 @@ def get_token() -> str:
             "(see .env.example)."
         )
     return token
+
+
+def get_openrouter_key() -> str:
+    """Return the OpenRouter API key, or "" if not configured."""
+    load_env_file()
+    return os.environ.get("OPENROUTER_API_KEY", "").strip()
+
+
+def get_openrouter_model() -> str:
+    """Return the OpenRouter model id, defaulting to the free auto-router."""
+    load_env_file()
+    return os.environ.get("OPENROUTER_MODEL", "").strip() or "openrouter/free"
+
+
+def get_translate_cooldown() -> float:
+    """Return the minimum seconds between translations per chat."""
+    load_env_file()
+    try:
+        return float(os.environ.get("TRANSLATE_COOLDOWN_SECONDS", "15"))
+    except ValueError:
+        return 15.0

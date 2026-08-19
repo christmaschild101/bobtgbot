@@ -1,1 +1,3 @@
 python-telegram-bot>=22.8
+langdetect>=1.0.9
+httpx>=0.27
