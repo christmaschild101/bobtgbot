@@ -13,7 +13,9 @@ $files = @(
     "bot\__init__.py",
     "bot\config.py",
     "bot\storage.py",
-    "bot\handlers.py"
+    "bot\handlers.py",
+    "bot\translator.py",
+    "bot\transcriber.py"
 )
 
 foreach ($f in $files) {
