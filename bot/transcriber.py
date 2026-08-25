@@ -1,4 +1,4 @@
-"""Local voice-message transcription using OpenAI Whisper + FFmpeg."""
+"""Local voice-message transcription using faster-whisper + FFmpeg."""
 
 from __future__ import annotations
 
@@ -16,19 +16,19 @@ _model: Any = None
 
 
 def _load_model() -> Any:
-    """Return the cached Whisper model, loading it on first call."""
+    """Return the cached WhisperModel, loading it on first call."""
     global _model
     if _model is None:
         try:
-            import whisper
+            from faster_whisper import WhisperModel
         except ImportError:
             raise ImportError(
-                "openai-whisper is not installed. "
-                "Run: pip install openai-whisper"
+                "faster-whisper is not installed. "
+                "Run: pip install faster-whisper"
             )
         name = get_whisper_model()
         logger.info("Loading Whisper model %r (first voice message)…", name)
-        _model = whisper.load_model(name)
+        _model = WhisperModel(name, device="cpu", compute_type="int8")
     return _model
 
 
@@ -44,13 +44,13 @@ async def transcribe_voice(file_bytes: bytes) -> Optional[str]:
 
         def _run() -> str:
             model = _load_model()
-            result = model.transcribe(str(tmp), fp16=False)
-            return result["text"].strip()
+            segments, _info = model.transcribe(str(tmp), fp16=False)
+            return "".join(seg.text for seg in segments).strip()
 
         text = await asyncio.to_thread(_run)
         return text or None
     except ImportError:
-        logger.error("openai-whisper is not installed – transcription disabled")
+        logger.error("faster-whisper is not installed – transcription disabled")
         return None
     except Exception:
         logger.exception("Whisper transcription failed")
