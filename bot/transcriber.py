@@ -6,22 +6,26 @@ import asyncio
 import logging
 import tempfile
 from pathlib import Path
-from typing import Optional
-
-import whisper
+from typing import Any, Optional
 
 from .config import get_whisper_model
 
 logger = logging.getLogger(__name__)
 
-_model: Optional[whisper.Whisper] = None
-_model_lock = asyncio.Lock()
+_model: Any = None
 
 
-def _load_model() -> whisper.Whisper:
+def _load_model() -> Any:
     """Return the cached Whisper model, loading it on first call."""
     global _model
     if _model is None:
+        try:
+            import whisper
+        except ImportError:
+            raise ImportError(
+                "openai-whisper is not installed. "
+                "Run: pip install openai-whisper"
+            )
         name = get_whisper_model()
         logger.info("Loading Whisper model %r (first voice message)…", name)
         _model = whisper.load_model(name)
@@ -45,6 +49,9 @@ async def transcribe_voice(file_bytes: bytes) -> Optional[str]:
 
         text = await asyncio.to_thread(_run)
         return text or None
+    except ImportError:
+        logger.error("openai-whisper is not installed – transcription disabled")
+        return None
     except Exception:
         logger.exception("Whisper transcription failed")
         return None
