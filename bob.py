@@ -16,6 +16,10 @@ from telegram.ext import (
     filters,
 )
 
+from bot.config import get_openrouter_key, get_token, get_translate_cooldown
+
+
+
 from bot.handlers import (
     cmd_ban,
     cmd_help,
@@ -62,8 +66,6 @@ def build_application() -> Application:
         )
     )
 
-    app.add_handler(
-    )
 
     return app
 
