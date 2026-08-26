@@ -16,7 +16,6 @@ from telegram.ext import (
     filters,
 )
 
-from bot.config import get_openrouter_key, get_token, get_translate_cooldown, get_whisper_model
 from bot.handlers import (
     cmd_ban,
     cmd_help,
@@ -26,7 +25,6 @@ from bot.handlers import (
     on_left_member,
     on_new_members,
     on_translatable_message,
-    on_voice_message,
 )
 from bot.storage import BobStore
 
@@ -38,14 +36,12 @@ logger = logging.getLogger(__name__)
 
 DATA_FILE = Path(__file__).resolve().parent / "bob_data.json"
 
-
 def build_application() -> Application:
     store = BobStore(DATA_FILE)
     app = Application.builder().token(get_token()).build()
     app.bot_data["store"] = store
     app.bot_data["translator_enabled"] = bool(get_openrouter_key())
     app.bot_data["translate_cooldown"] = get_translate_cooldown()
-    app.bot_data["transcribe_enabled"] = bool(get_whisper_model())
 
     app.add_handler(CommandHandler("start", cmd_start))
     app.add_handler(CommandHandler("help", cmd_help))
@@ -67,17 +63,14 @@ def build_application() -> Application:
     )
 
     app.add_handler(
-        MessageHandler(filters.VOICE & filters.ChatType.GROUPS, on_voice_message)
     )
 
     return app
-
 
 def main() -> None:
     app = build_application()
     logger.info("Bob is starting...")
     app.run_polling(allowed_updates=Update.ALL_TYPES)
-
 
 if __name__ == "__main__":
     main()

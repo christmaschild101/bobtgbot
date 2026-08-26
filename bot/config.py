@@ -60,12 +60,3 @@ def get_translate_cooldown() -> float:
     except ValueError:
         return 15.0
 
-
-def get_whisper_model() -> str:
-    """Return the Whisper model size, defaulting to 'base'.
-
-    Set the WHISPER_MODEL env var to 'tiny', 'base', 'small', 'medium',
-    or 'large' to override.
-    """
-    load_env_file()
-    return os.environ.get("WHISPER_MODEL", "base").strip() or "base"
