@@ -28,6 +28,8 @@ class BobStore:
                 self._data = {}
         if not isinstance(self._data, dict):
             self._data = {}
+        if "tracked_chats" not in self._data:
+            self._data["tracked_chats"] = []
 
     def _save(self) -> None:
         self.path.parent.mkdir(parents=True, exist_ok=True)
@@ -44,6 +46,7 @@ class BobStore:
             self._data[key] = {
                 "welcome_msg": DEFAULT_WELCOME,
                 "farewell_msg": DEFAULT_FAREWELL,
+                "broadcast_disabled": False,
             }
         return self._data[key]
 
@@ -64,3 +67,34 @@ class BobStore:
         with self._lock:
             self._chat(chat_id)["farewell_msg"] = message
             self._save()
+
+    # --- Broadcast opt-out ---
+
+    def is_broadcast_disabled(self, chat_id: int) -> bool:
+        with self._lock:
+            return bool(self._chat(chat_id).get("broadcast_disabled", False))
+
+    def set_broadcast_disabled(self, chat_id: int, disabled: bool) -> None:
+        with self._lock:
+            self._chat(chat_id)["broadcast_disabled"] = disabled
+            self._save()
+
+    # --- Chat tracking ---
+
+    def track_chat(self, chat_id: int) -> None:
+        with self._lock:
+            tracked = self._data.setdefault("tracked_chats", [])
+            if chat_id not in tracked:
+                tracked.append(chat_id)
+                self._save()
+
+    def untrack_chat(self, chat_id: int) -> None:
+        with self._lock:
+            tracked = self._data.setdefault("tracked_chats", [])
+            if chat_id in tracked:
+                tracked.remove(chat_id)
+                self._save()
+
+    def get_tracked_chats(self) -> list[int]:
+        with self._lock:
+            return list(self._data.get("tracked_chats", []))

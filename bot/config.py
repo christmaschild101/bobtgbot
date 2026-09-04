@@ -60,3 +60,15 @@ def get_translate_cooldown() -> float:
     except ValueError:
         return 15.0
 
+
+
+def get_bot_owner() -> int | None:
+    """Return the bot owner's Telegram user ID, or None if not configured."""
+    load_env_file()
+    raw = os.environ.get("BOT_OWNER_USER_ID", "").strip()
+    if not raw:
+        return None
+    try:
+        return int(raw)
+    except ValueError:
+        return None

@@ -218,6 +218,9 @@ async def on_new_members(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
     for member in message.new_chat_members:
         if member.id == context.bot.id:
+            store.track_chat(chat.id)
+            if store.is_broadcast_disabled(chat.id):
+                continue
             store.get_welcome(chat.id)
             await message.reply_text(
                 "Thanks for adding me! Type /help to see what I can do."
@@ -233,6 +236,9 @@ async def on_left_member(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     if chat is None or message is None or message.left_chat_member is None:
         return
     store: BobStore = context.bot_data["store"]
+    if message.left_chat_member.id == context.bot.id:
+        store.untrack_chat(chat.id)
+        return
     farewell = store.get_farewell(chat.id)
     await message.reply_text(_render(farewell, chat, message.left_chat_member))
 
@@ -270,3 +276,76 @@ async def on_translatable_message(
     context.chat_data["last_translation"] = time.monotonic()
     await message.reply_text(translation)
 
+
+
+async def cmd_broadcast(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Broadcast a message to all tracked groups (bot owner only)."""
+    from .config import get_bot_owner
+
+    message = update.effective_message
+    if message is None:
+        return
+
+    owner_id = get_bot_owner()
+    if owner_id is None:
+        await message.reply_text(
+            "Broadcast is not configured. Set BOT_OWNER_USER_ID in the environment."
+        )
+        return
+
+    user = update.effective_user
+    if user is None or user.id != owner_id:
+        await message.reply_text("Only the bot owner can broadcast.")
+        return
+
+    if not context.args:
+        await message.reply_text("Usage: /broadcast <message>")
+        return
+
+    text = " ".join(context.args)
+    store: BobStore = context.bot_data["store"]
+    tracked = store.get_tracked_chats()
+
+    sent = 0
+    skipped = 0
+    failed = 0
+
+    for chat_id in tracked:
+        if store.is_broadcast_disabled(chat_id):
+            skipped += 1
+            continue
+        try:
+            await context.bot.send_message(chat_id=chat_id, text=text)
+            sent += 1
+        except TelegramError:
+            failed += 1
+
+    await message.reply_text(
+        f"Broadcast sent to {sent} group(s). {skipped} opted out. {failed} failed."
+    )
+
+
+async def cmd_broadcastoff(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Toggle broadcast opt-out for this group (admins only)."""
+    chat = update.effective_chat
+    message = update.effective_message
+    if chat is None or message is None:
+        return
+
+    if chat.type == ChatType.PRIVATE:
+        await message.reply_text("Run this command inside the group instead.")
+        return
+
+    if not await is_admin(update, update.effective_user.id):
+        await message.reply_text("Only admins can change that.")
+        return
+
+    store: BobStore = context.bot_data["store"]
+    currently_disabled = store.is_broadcast_disabled(chat.id)
+
+    if currently_disabled:
+        store.set_broadcast_disabled(chat.id, False)
+        await message.reply_text("Broadcasts are now enabled for this group.")
+    else:
+        store.set_broadcast_disabled(chat.id, True)
+        await message.reply_text("Broadcasts are now disabled for this group.")

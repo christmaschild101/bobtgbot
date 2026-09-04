@@ -19,9 +19,10 @@ from telegram.ext import (
 from bot.config import get_openrouter_key, get_token, get_translate_cooldown
 
 
-
 from bot.handlers import (
     cmd_ban,
+    cmd_broadcast,
+    cmd_broadcastoff,
     cmd_help,
     cmd_set_farewell,
     cmd_set_welcome,
@@ -56,6 +57,8 @@ def build_application() -> Application:
     app.add_handler(CommandHandler("fairwellmsg", cmd_set_farewell))
 
     app.add_handler(CommandHandler("ban", cmd_ban))
+    app.add_handler(CommandHandler("broadcast", cmd_broadcast))
+    app.add_handler(CommandHandler("broadcastoff", cmd_broadcastoff))
 
     app.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, on_new_members))
     app.add_handler(MessageHandler(filters.StatusUpdate.LEFT_CHAT_MEMBER, on_left_member))
