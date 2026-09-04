@@ -45,6 +45,7 @@ def build_application() -> Application:
     store = BobStore(DATA_FILE)
     app = Application.builder().token(get_token()).build()
     app.bot_data["store"] = store
+    store.backfill_tracked_chats()
     app.bot_data["translator_enabled"] = bool(get_openrouter_key())
     app.bot_data["translate_cooldown"] = get_translate_cooldown()
 

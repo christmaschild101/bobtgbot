@@ -98,3 +98,21 @@ class BobStore:
     def get_tracked_chats(self) -> list[int]:
         with self._lock:
             return list(self._data.get("tracked_chats", []))
+
+    def backfill_tracked_chats(self) -> None:
+        """Add any existing chat IDs to tracked_chats if missing."""
+        with self._lock:
+            tracked = self._data.setdefault("tracked_chats", [])
+            changed = False
+            for key in self._data:
+                if key == "tracked_chats":
+                    continue
+                try:
+                    chat_id = int(key)
+                except ValueError:
+                    continue
+                if chat_id not in tracked:
+                    tracked.append(chat_id)
+                    changed = True
+            if changed:
+                self._save()
