@@ -63,7 +63,9 @@ def build_application() -> Application:
     app.add_handler(CommandHandler("broadcast", cmd_broadcast))
     app.add_handler(CommandHandler("broadcastoff", cmd_broadcastoff))
     app.add_handler(CommandHandler("premote", cmd_premote))
+    app.add_handler(CommandHandler("promote", cmd_premote))
     app.add_handler(CommandHandler("demote", cmd_demote))
+    app.add_handler(CommandHandler("undemote", cmd_premote))
 
     app.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, on_new_members))
     app.add_handler(MessageHandler(filters.StatusUpdate.LEFT_CHAT_MEMBER, on_left_member))
