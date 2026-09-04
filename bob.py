@@ -23,6 +23,8 @@ from bot.handlers import (
     cmd_ban,
     cmd_broadcast,
     cmd_broadcastoff,
+    cmd_demote,
+    cmd_premote,
     cmd_help,
     cmd_set_farewell,
     cmd_set_welcome,
@@ -60,6 +62,8 @@ def build_application() -> Application:
     app.add_handler(CommandHandler("ban", cmd_ban))
     app.add_handler(CommandHandler("broadcast", cmd_broadcast))
     app.add_handler(CommandHandler("broadcastoff", cmd_broadcastoff))
+    app.add_handler(CommandHandler("premote", cmd_premote))
+    app.add_handler(CommandHandler("demote", cmd_demote))
 
     app.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, on_new_members))
     app.add_handler(MessageHandler(filters.StatusUpdate.LEFT_CHAT_MEMBER, on_left_member))

@@ -349,3 +349,120 @@ async def cmd_broadcastoff(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     else:
         store.set_broadcast_disabled(chat.id, True)
         await message.reply_text("Broadcasts are now disabled for this group.")
+
+
+async def cmd_premote(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Promote a user to admin. Both caller and target must be admin/owner."""
+    chat = update.effective_chat
+    message = update.effective_message
+    if chat is None or message is None:
+        return
+
+    if chat.type == ChatType.PRIVATE:
+        await message.reply_text("Run this command inside the group instead.")
+        return
+
+    if not await is_admin(update, update.effective_user.id):
+        await message.reply_text("Only admins can premote people.")
+        return
+
+    target = _resolve_target(update, context.args)
+    if target is None:
+        await message.reply_text(
+            "Reply to the person you want to premote, or pass an ID / @username."
+        )
+        return
+
+    if target.id == context.bot.id:
+        await message.reply_text("I'm already an admin, thanks!")
+        return
+
+    if not await is_admin(update, target.id):
+        await message.reply_text("The target must already be an admin to be premoted.")
+        return
+
+    try:
+        await context.bot.promote_chat_member(
+            chat.id,
+            target.id,
+            can_manage_chat=True,
+            can_delete_messages=True,
+            can_invite_users=True,
+            can_restrict_members=True,
+            can_pin_messages=True,
+            can_promote_members=False,
+            can_change_info=True,
+            can_post_messages=False,
+            can_edit_messages=False,
+        )
+    except Forbidden:
+        await message.reply_text(
+            "I can't premote people - make me an admin with promote rights first."
+        )
+        return
+    except BadRequest as exc:
+        await message.reply_text(f"Couldn't premote: {exc.message or 'bad request'}.")
+        return
+
+    name = target.full_name or str(target.id)
+    await message.reply_text(
+        f"{name}, you have been premoted to admin! "
+        "Condratulations! This is a premotion to an administrator."
+    )
+
+
+async def cmd_demote(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Demote an admin to regular member. Both caller and target must be admin/owner."""
+    chat = update.effective_chat
+    message = update.effective_message
+    if chat is None or message is None:
+        return
+
+    if chat.type == ChatType.PRIVATE:
+        await message.reply_text("Run this command inside the group instead.")
+        return
+
+    if not await is_admin(update, update.effective_user.id):
+        await message.reply_text("Only admins can demote people.")
+        return
+
+    target = _resolve_target(update, context.args)
+    if target is None:
+        await message.reply_text(
+            "Reply to the person you want to demote, or pass an ID / @username."
+        )
+        return
+
+    if target.id == context.bot.id:
+        await message.reply_text("I can't demote myself.")
+        return
+
+    if not await is_admin(update, target.id):
+        await message.reply_text("That user isn't an admin.")
+        return
+
+    try:
+        await context.bot.promote_chat_member(
+            chat.id,
+            target.id,
+            can_manage_chat=False,
+            can_delete_messages=False,
+            can_invite_users=False,
+            can_restrict_members=False,
+            can_pin_messages=False,
+            can_promote_members=False,
+            can_change_info=False,
+            can_post_messages=False,
+            can_edit_messages=False,
+        )
+    except Forbidden:
+        await message.reply_text(
+            "I can't demote people - make me an admin with promote rights first."
+        )
+        return
+    except BadRequest as exc:
+        await message.reply_text(f"Couldn't demote: {exc.message or 'bad request'}.")
+        return
+
+    name = target.full_name or str(target.id)
+    await message.reply_text(f"{name} has been demoted.")
