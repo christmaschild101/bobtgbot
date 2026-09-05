@@ -44,7 +44,7 @@ async def transcribe_voice(file_bytes: bytes) -> Optional[str]:
 
         def _run() -> str:
             model = _load_model()
-            segments, _info = model.transcribe(str(tmp), fp16=False)
+            segments, _info = model.transcribe(str(tmp))
             return "".join(seg.text for seg in segments).strip()
 
         text = await asyncio.to_thread(_run)
