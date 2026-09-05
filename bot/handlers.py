@@ -466,3 +466,26 @@ async def cmd_demote(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
 
     name = target.full_name or str(target.id)
     await message.reply_text(f"{name} has been demoted.")
+
+
+async def on_voice_message(
+    update: Update, context: ContextTypes.DEFAULT_TYPE
+) -> None:
+    """Transcribe a voice message and reply with the text."""
+    if not context.bot_data.get("transcribe_enabled"):
+        return
+    message = update.effective_message
+    if message is None or message.voice is None:
+        return
+    sender = message.from_user
+    if sender is None or sender.is_bot:
+        return
+
+    from .transcriber import transcribe_voice
+
+    file = await message.voice.get_file()
+    file_bytes = await file.download_as_bytearray()
+
+    text = await transcribe_voice(bytes(file_bytes))
+    if text:
+        await message.reply_text(text)
