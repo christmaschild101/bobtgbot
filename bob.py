@@ -45,6 +45,10 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     level=logging.INFO,
 )
+# HTTP request URLs include Telegram's bot token. Keep transport diagnostics out of
+# the service journal while preserving application-level INFO logs.
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("httpcore").setLevel(logging.WARNING)
 logger = logging.getLogger(__name__)
 
 DATA_FILE = Path(__file__).resolve().parent / "bob_data.json"
