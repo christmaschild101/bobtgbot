@@ -489,3 +489,7 @@ async def on_voice_message(
     text = await transcribe_voice(bytes(file_bytes))
     if text:
         await message.reply_text(text)
+    else:
+        await message.reply_text(
+            "Sorry, I couldn't transcribe that voice message. Please try again."
+        )
